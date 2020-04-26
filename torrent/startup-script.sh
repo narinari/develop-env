@@ -41,6 +41,7 @@ fi
 # Update on each startup except the first time
 update()
 {
+:
 }
 
 main
