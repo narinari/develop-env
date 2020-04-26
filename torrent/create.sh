@@ -19,7 +19,7 @@ SERVICE_ACCOUNT=$(\
 # Create a instance
 gcloud beta compute --project "${PROJECT_NAME}" \
   instances create "${INSTANCE_NAME}" \
-  --zone "us-west1-a" \
+  --zone "${ZONE:-us-west1-a}" \
   --machine-type "f1-micro" \
   --subnet "default" \
   --can-ip-forward \

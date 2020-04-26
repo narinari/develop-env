@@ -2,7 +2,7 @@
 
 USERNAME="narinari_t"
 
-DNS_ZONE_NAME=$(gcloud compute instances describe test --zone asia-northeast1-a --format="value(metadata.dnsZoneName)")
+DNS_ZONE_NAME=$(gcloud compute instances describe test --zone ${ZONE:-asia-northeast1-a} --format="value(metadata.dnsZoneName)")
 ZONE=$(gcloud dns record-sets list --zone ${DNS_ZONE_NAME} --limit 1 --format "value(name)")
 
 INITIALIZED_FLAG=".startup_script_initialized"

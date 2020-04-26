@@ -36,7 +36,7 @@ SERVICE_ACCOUNT=$(\
 # Create a instance
 gcloud compute --project "${PROJECT_NAME}" \
   instances create "${INSTANCE_NAME}" \
-  --zone "asia-northeast1-a" \
+  --zone "${ZONE:-asia-northeast1-a}" \
   --machine-type "g1-small" \
   --subnet "default" \
   --maintenance-policy "MIGRATE" \

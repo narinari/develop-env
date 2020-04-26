@@ -22,7 +22,7 @@ STARTUP_SCRIPT=$(echo -e "#! /bin/bash\nmodprobe af_key")
 # Create a instance
 gcloud beta compute --project "${PROJECT_NAME}" \
   instances create-with-container "${INSTANCE_NAME}" \
-  --zone "asia-northeast1-a" \
+  --zone "${ZONE:-asia-northeast1-a}" \
   --machine-type "f1-micro" \
   --subnet "default" \
   --address "${IP_ADDRESS}" \
