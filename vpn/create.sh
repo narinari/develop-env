@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Settings
-PROJECT_NAME="develop-env"
+PROJECT_NAME="${PROJECT_NAME:-develop-env}"
 INSTANCE_NAME="vpn"
 
 # Arguments

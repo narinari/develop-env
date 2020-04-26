@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Settings
-PROJECT_NAME="sdachi-dev"
+PROJECT_NAME="${PROJECT_NAME:-develop-env}"
 DNS_ZONE_NAME="localhost-zone"
 GITHUB_REPO="narinari/develop-env"
 

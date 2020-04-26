@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Settings
-PROJECT_NAME="develop-env"
+PROJECT_NAME="${PROJECT_NAME:-develop-env}"
 GITHUB_REPO="narinari/develop-env"
 INSTANCE_NAME="workspace"
 
