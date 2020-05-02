@@ -1,6 +1,6 @@
 #!/bin/sh
 
-USERNAME="narinari_t"
+USERNAME="narinari"
 
 DNS_ZONE_NAME=$(gcloud compute instances describe test --zone ${ZONE:-asia-northeast1-a} --format="value(metadata.dnsZoneName)")
 ZONE=$(gcloud dns record-sets list --zone ${DNS_ZONE_NAME} --limit 1 --format "value(name)")
@@ -42,7 +42,7 @@ setup()
 
   # Git
   sudo -i -u "${USERNAME}" git config --global user.name "TANABE Takashi"
-  sudo -i -u "${USERNAME}" git config --global user.email "narinari@gmail.com"
+  sudo -i -u "${USERNAME}" git config --global user.email "narinari.t@gmail.com"
 
   # yadm
   curl -fLo /usr/local/bin/yadm https://github.com/TheLocehiliosan/yadm/raw/master/yadm && \
