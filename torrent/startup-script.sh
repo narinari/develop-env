@@ -1,11 +1,16 @@
 #!/bin/sh
 
-#!/bin/sh
+docker pull google/cloud-sdk
+GCLOUD_CMD="docker run -it --rm google/cloud-sdk"
+DNS_ZONE_NAME=$($GCLOUD_CMD compute instances describe test --zone ${ZONE:-asia-northeast1-a} --format="value(metadata.dnsZoneName)")
+ZONE=$($GCLOUD_CMD dns record-sets list --zone ${DNS_ZONE_NAME} --limit 1 --format "value(name)")
 
 INITIALIZED_FLAG=".startup_script_initialized"
 
 main()
 {
+  tell_my_private_ip_address_to_dns
+
   if test -e $INITIALIZED_FLAG
   then
     # Startup Scripts
@@ -42,6 +47,31 @@ fi
 update()
 {
 :
+}
+
+tell_my_private_ip_address_to_dns()
+{
+  # Get the hostname of the instance
+  HOSTNAME=$(hostname)
+
+  # Get the ip address which is used last time
+  LAST_PRIVATE_ADDRESS=$(host "${HOSTNAME}.${ZONE}" | sed -rn 's@^.* has address @@p')
+
+  # Get the current local ip address
+  PRIVATE_ADDRESS=$(hostname -i)
+
+  # Update Cloud DNS
+  TEMP=$(mktemp -u)
+  $GCLOUD_CMD dns record-sets transaction start -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}"
+
+  if test "$LAST_PRIVATE_ADDRESS" != ""
+  then
+    $GCLOUD_CMD dns record-sets transaction remove -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
+      --name "${HOSTNAME}.${ZONE}" --ttl 300 --type A "$LAST_PRIVATE_ADDRESS"
+  fi
+  $GCLOUD_CMD dns record-sets transaction add -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}" \
+    --name "${HOSTNAME}.${ZONE}" --ttl 300 --type A "$PRIVATE_ADDRESS"
+  $GCLOUD_CMD dns record-sets transaction execute -z "${DNS_ZONE_NAME}" --transaction-file="${TEMP}"
 }
 
 main
