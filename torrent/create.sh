@@ -23,7 +23,7 @@ gcloud beta compute --project "${PROJECT_NAME}" \
   --machine-type "f1-micro" \
   --subnet "default" \
   --can-ip-forward \
-  --tags "vpn" \
+  --tags "torrent" \
   --maintenance-policy "MIGRATE" \
   --service-account "${SERVICE_ACCOUNT}" \
   --min-cpu-platform "Automatic" \

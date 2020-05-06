@@ -39,7 +39,7 @@ else
     uid=$(id -u "$user")
     gid=$(id -g "$user")
     chown $uid:$gid downloads
-    docker run --name cloud-torrent -d -p 80:3000 -u $uid:$gid -v "$PWD/downloads:/downloads" jpillora/cloud-torrent
+    docker run --name cloud-torrent -d -p 80:3000 -p 50007:50007 -u $uid:$gid -v "$PWD/downloads:/downloads" jpillora/cloud-torrent
 fi
 }
 
