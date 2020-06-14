@@ -20,7 +20,7 @@ SERVICE_ACCOUNT=$(\
 gcloud beta compute --project "${PROJECT_NAME}" \
   instances create "${INSTANCE_NAME}" \
   --zone "${ZONE:-us-west1-a}" \
-  --machine-type "f1-micro" \
+  --machine-type "g1-small" \
   --subnet "default" \
   --can-ip-forward \
   --tags "torrent" \
