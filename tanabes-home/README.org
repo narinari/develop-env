@@ -1,0 +1,136 @@
+* initial setup
+1. Firmware update
+   #+begin_src shell
+sudo rpi-eeprom-update # Read the output of this before proceeding
+sudo rpi-eeprom-update -d -a # Actually do the update
+sudo raspi-config # Go to Advanced Options and enable USB boot
+   #+end_src
+
+2. download SD Card image
+   https://nixos.wiki/wiki/NixOS_on_ARM#SD_card_images_.28SBCs_and_similar_platforms.29
+
+3. Write image to SD Card
+   #+begin_src shell
+   unzstd --stdout ~/Download/nixos-sd-image-xxxxxx-aarch64-linux.img.zst | sudo dd of=/dev/sdb bs=4096 conv=fsync status=progress
+   #+end_src
+
+4. config on local
+   micro HDMI 変換アダプターとセレクターは使わない(映らない)
+   #+begin_src shell
+mkdir ~/.ssh
+curl -L https://github.com/narinari.keys >> ~/.ssh/authorized_keys
+ip addr
+   #+end_src
+
+5. config via ssh
+   #+begin_src shell
+scp -r tanabe-home nixos@ip:.
+ssh nixos@ip
+sudo mv tanabe-home/* /etc/nixos/
+   #+end_src
+
+   WiFi を使う場合
+   #+begin_src nix
+wireless.networks.<SSID>.pskRaw=""; # wpa_passphrase SSID secret の値
+   #+end_src
+** os upgrade
+nixops が使うチャネルは実行しているマシンのを使うので、ホストの方のチャネルを変える必要がある
+
+* silk memo
+nix-env -i pcsclite pcsc-tools ccid
+nix-env -i unzip
+
+services.pcscd.enable = true;
+
+px4 ドライバをインストール
+git clone --depth=1 --single-branch --branch=develop https://github.com/nns779/px4_drv
+ビルドできるけど configuration.nix に反映する方法がわからなかった
+
+gist にあった
+https://gist.github.com/gtgteq/30cb73c344477d26f8c69768e010331a
+curl -L -O https://gist.github.com/gtgteq/30cb73c344477d26f8c69768e010331a/archive/2c534a3a25624103e094c8a10b8b696ba7721e92.zip
+unzip 2c534a3a25624103e094c8a10b8b696ba7721e92.zip
+
+nix ファイルに少し手を入れる
+stdenv.lib -> lib
+pkg.linux_4_xx -> pkg.linuxPackage_rpi4.kernel
+
+recpt1 ビルド
+git clone --depth=1 --single-branch --branch=master https://github.com/stz2012/recpt1.git
+
+nix-env -i autoconf automake gcc
+
+cd recpt1/recpt1
+./autoge.sh
+./configure --enable-b25
+
+nix-build recpt1.nix
+
+./recpt1 --device /dev/px4video0 --lnb 15 --b25 --strip BS15_0 10 ~/bs0.m2ts &
+./recpt1 --device /dev/px4video1 --lnb 15 --b25 --strip BS01_2 10 ~/bs1.m2ts &
+./recpt1 --device /dev/px4video1 --lnb 15 --b25 --strip BS09_1 10 ~/bs9.m2ts
+./recpt1 --device /dev/px4video1 --lnb 15 --b25 --strip CS25_7 10 ~/cs257.m2ts
+./recpt1 --device /dev/px4video2 --b25 --strip 27 10 ~/gr0.m2ts &
+./recpt1 --device /dev/px4video3 --b25 --strip 27 10 ~/gr1.m2ts &
+
+git clone --depth=1 --single-branch --branch=master https://github.com/stz2012/libarib25.git
+nix-shell
+cmake -S . -B build
+cmake --build build
+
+
+pcscd の権限エラーが出る
+journalctl -e
+#+begin_example
+00000000 auth.c:137:IsClientAuthorized() Process 6746 (user: 1001) is NOT authorized for action: access_card
+#+end_example
+
+polkit のルールに設定が必要
+http://sarami.pv.s-labo.com/blog/zatta/?p=327
+
+/etc/nixos/configuration.nix に polkit の設定を追加
+#+begin_src nix
+  security.polkit.extraConfig = ''
+      polkit.addRule(function(action, subject) {
+        if (action.id == "org.debian.pcsc-lite.access_pcsc" &&
+          subject.isInGroup("wheel")) {
+          return polkit.Result.YES;
+        }
+      });
+
+      polkit.addRule(function(action, subject) {
+        if (action.id == "org.debian.pcsc-lite.access_card" &&
+          subject.isInGroup("wheel")) {
+          return polkit.Result.YES;
+        }
+      });
+  '';
+#+end_src
+
+** nix を整理
+
+#+begin_example
+cd my-nixpkgs
+nix-env -f . -iA libarib25
+nix-env -f . -iA recpt1
+#+end_example
+
+** 録画環境
+#+begin_example
+nix-env -i ffmpeg
+#+end_example
+
+hardware accelaration できず
+#+begin_example
+ls -l /dev/video*
+#+end_example
+権限がなさそう
+=video= グループに追加
+
+** EPGStation
+configuration.nix に services.epgstation.enable = true; を追加すればよさそう
+
+
+
+** 参考にしたサイト
+- https://qiita.com/tatsuya_info/items/3583182ac104a4958eac
