@@ -10,23 +10,19 @@ const dualMonoMode = "main";
 const videoHeight = parseInt(process.env.VIDEORESOLUTION, 10);
 const isDualMono = parseInt(process.env.AUDIOCOMPONENTTYPE, 10) == 2;
 const audioBitrate = videoHeight > 720 ? "192k" : "128k";
-const preset = "veryslow";
+const preset = "fast";
+// const codec = "h264_v4l2m2m"; // RaspberryPi4 hardware accelarator
 const codec = "libx264";
 const crf = 23;
 
+// prettier-ignore
 const args = [
-  "-y",
-  "-analyzeduration",
-  analyzedurationSize,
-  "-probesize",
-  probesizeSize,
+  '-ss','4', // 冒頭をスキップ
+  '-y',
+  '-analyzeduration', analyzedurationSize,
+  '-probesize', probesizeSize,
+  '-fix_sub_duration',
 ];
-
-// dual mono 設定
-if (isDualMono) {
-  args.push("-dual_mono_mode", dualMonoMode);
-  args.push("-filter_complex", "channelsplit");
-}
 
 // input 設定
 Array.prototype.push.apply(args, ["-i", input]);
@@ -34,27 +30,45 @@ Array.prototype.push.apply(args, ["-i", input]);
 // メタ情報を先頭に置く
 Array.prototype.push.apply(args, [
   "-movflags",
-  "frag_keyframe+empty_moov+faststart+default_base_moof",
+  // "frag_keyframe+empty_moov+faststart+default_base_moof",
+  "+faststart",
 ]);
 
 // 字幕データを含めたストリームをすべてマップ
 // Array.prototype.push.apply(args, ['-map', '0', '-ignore_unknown', '-max_muxing_queue_size', maxMuxingQueueSize, '-sn']);
 
+// ビデオストリーム設定
 // video filter 設定
-let videoFilter = "yadif";
-Array.prototype.push.apply(args, ["-vf", videoFilter]);
+// let videoFilter = "yadif";
+// Array.prototype.push.apply(args, ["-vf", videoFilter]);
+
+args.push("-map", "0:v");
+
+// オーディオストリーム設定
+// prettier-ignore
+if (isDualMono) {
+  args.push(
+    '-filter_complex',
+    'channelsplit[FL][FR]',
+    '-map', '[FL]',
+    '-map', '[FR]',
+    '-metadata:s:a:0', 'language=jpn',
+    '-metadata:s:a:1', 'language=eng');
+} else {
+  args.push(
+    '-map', '0:a:0',
+    '-metadata:s:a:0', 'title=main',
+    '-metadata:s:a:0', 'language=jpn');
+}
+
+// 字幕ストリーム設定
+// prettier-ignore
+args.push('-map', '0:s?', '-metadata:s:s:0', 'title=main', '-metadata:s:s:0', 'language=jpn', '-c:s', 'mov_text');
 
 // その他設定
 // prettier-ignore
 Array.prototype.push.apply(args,[
-    '-pix_fmt', 'yuv420p',
-    '-g:v', '25',
-    '-b:v', '4000000',
-    '-minrate:v', '500000',
-    '-maxrate:v', '5000000',
-    '-bufsize:v', '5000000',
-    '-level', '5.2',
-    '-tune', 'fastdecode,zerolatency',
+    // '-tune', 'fastdecode,zerolatency',
     '-preset', preset,
     '-aspect', '16:9',
     '-c:v', codec,
@@ -67,11 +81,7 @@ Array.prototype.push.apply(args,[
     output
 ]);
 
-let str = "";
-for (let i of args) {
-  str += ` ${i}`;
-}
-console.error(str);
+console.error(args.join(" "));
 
 const child = spawn(ffmpeg, args);
 
