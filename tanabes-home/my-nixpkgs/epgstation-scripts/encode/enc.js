@@ -1,5 +1,6 @@
 const spawn = require("child_process").spawn;
 const ffmpeg = process.env.FFMPEG;
+const opts = process.argv.slice(2);
 
 const input = process.env.INPUT;
 const output = process.env.OUTPUT;
@@ -10,9 +11,14 @@ const dualMonoMode = "main";
 const videoHeight = parseInt(process.env.VIDEORESOLUTION, 10);
 const isDualMono = parseInt(process.env.AUDIOCOMPONENTTYPE, 10) == 2;
 const audioBitrate = videoHeight > 720 ? "192k" : "128k";
-const preset = "fast";
-// const codec = "h264_v4l2m2m"; // RaspberryPi4 hardware accelarator
-const codec = "libx264";
+
+const isSoftwareEncMode = opts[0] == "--software-encode";
+
+let videoCodecParams = ["-c:v", "h264_v4l2m2m", "-b:v", "5M"]; // RaspberryPi4 hardware accelerator
+if (isSoftwareEncMode) {
+  videoCodecParams = ["-preset", "fast", "-c:v", "libx264"];
+}
+
 const crf = 23;
 
 // prettier-ignore
@@ -63,22 +69,22 @@ if (isDualMono) {
 
 // 字幕ストリーム設定
 // prettier-ignore
-args.push('-map', '0:s?', '-metadata:s:s:0', 'title=main', '-metadata:s:s:0', 'language=jpn', '-c:s', 'mov_text');
+// args.push('-map', '0:s?', '-metadata:s:s:0', 'title=main', '-metadata:s:s:0', 'language=jpn', '-c:s', 'mov_text');
+
+Array.prototype.push.apply(args, videoCodecParams);
 
 // その他設定
 // prettier-ignore
 Array.prototype.push.apply(args,[
-    // '-tune', 'fastdecode,zerolatency',
-    '-preset', preset,
-    '-aspect', '16:9',
-    '-c:v', codec,
-    '-crf', crf,
-    '-f', 'mp4',
-    '-c:a', 'aac',
-    '-ar', '48000',
-    '-ab', audioBitrate,
-    '-ac', '2',
-    output
+  // '-tune', 'fastdecode,zerolatency',
+  '-aspect', '16:9',
+  '-crf', crf,
+  '-f', 'mp4',
+  '-c:a', 'aac',
+  '-ar', '48000',
+  '-ab', audioBitrate,
+  '-ac', '2',
+  output
 ]);
 
 console.error(args.join(" "));
